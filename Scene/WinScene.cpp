@@ -1,0 +1,111 @@
+#include <functional>
+#include <string>
+#include <fstream>
+#include "Engine/AudioHelper.hpp"
+#include "Engine/GameEngine.hpp"
+#include "Engine/Point.hpp"
+#include "PlayScene.hpp"
+#include "UI/Component/Image.hpp"
+#include "UI/Component/ImageButton.hpp"
+#include "UI/Component/Label.hpp"
+#include "WinScene.hpp"
+#include "UI/Component/InputBox.hpp"
+void WinScene::Initialize() {
+    ticks = 0;
+    int w = Engine::GameEngine::GetInstance().GetScreenSize().x;
+    int h = Engine::GameEngine::GetInstance().GetScreenSize().y;
+    int halfW = w / 2;
+    int halfH = h / 2;
+    //Engine::InputBox* nameInput = nullptr;
+    AddNewObject(new Engine::Image("win/benjamin-sad.png", halfW, halfH, 0, 0, 0.5, 0.5));
+    AddNewObject(new Engine::Label("You Win!", "pirulen.ttf", 48, halfW, halfH / 4 - 10, 255, 255, 255, 255, 0.5, 0.5));
+    Engine::ImageButton *btn;
+    btn = new Engine::ImageButton("win/dirt.png", "win/floor.png", halfW - 200, halfH * 7 / 4 - 50, 400, 100);
+    btn->SetOnClickCallback(std::bind(&WinScene::BackOnClick, this, 2));
+    AddNewControlObject(btn);
+    AddNewObject(new Engine::Label("Back", "pirulen.ttf", 48, halfW, halfH * 7 / 4, 0, 0, 0, 255, 0.5, 0.5));
+    bgmId = AudioHelper::PlayAudio("win.wav");
+
+    //my
+    /*
+    nameInput = new Engine::InputBox(halfW - 150, halfH / 2, 300, 40, "Your Name");
+    // InputBox 是 IObject，所以用 AddNewObject
+    AddNewObject(nameInput);
+    auto* abtn = new Engine::ImageButton(
+        "win/dirt.png", "win/floor.png",
+        halfW - 100, halfH/2 + 80, 200, 60
+    );
+    abtn->SetOnClickCallback([&](){
+        SaveNameToScoreboard();
+    });
+    AddNewObject(abtn);*/
+    nameInput = new Engine::InputBox(halfW - 150, halfH/2, 300, 40, "Your Name");
+    AddNewControlObject(nameInput);    
+
+    // Submit 按鈕也當 control 加入
+    auto* abtn = new Engine::ImageButton(
+        "win/dirt.png","win/floor.png",
+        halfW - 100, halfH/2 + 80, 200, 60);
+    abtn->SetOnClickCallback([&](){
+        SaveNameToScoreboard();
+    });
+    AddNewControlObject(abtn);   
+    //my
+}
+void WinScene::Terminate() {
+    IScene::Terminate();
+    AudioHelper::StopBGM(bgmId);
+}
+void WinScene::Update(float deltaTime) {
+    ticks += deltaTime;
+    if (ticks > 4 && ticks < 100 &&
+        dynamic_cast<PlayScene *>(Engine::GameEngine::GetInstance().GetScene("play"))->MapId == 2) {
+        ticks = 100;
+        bgmId = AudioHelper::PlayBGM("happy.ogg");
+    }
+}
+void WinScene::BackOnClick(int stage) {
+    // Change to select scene.
+    Engine::GameEngine::GetInstance().ChangeScene("stage-select");
+}
+void WinScene::SaveNameToScoreboard() {
+    /*std::string name = nameInput ? nameInput->GetText() : "Anonymous";
+    std::ofstream ofs("Resource/scoreboard.txt", std::ios::app);
+    if (ofs.is_open()) {
+        ofs << name << "\n";
+    }*/
+    // 1) 取今天日期
+    std::time_t t = std::time(nullptr);
+    std::tm* lt = std::localtime(&t);
+    int year  = lt->tm_year + 1900;
+    int month = lt->tm_mon  + 1;
+    int day   = lt->tm_mday;
+
+   
+    std::string name = nameInput ? nameInput->GetText() : "Anonymous";
+
+  
+    auto play = dynamic_cast<PlayScene*>(
+        Engine::GameEngine::GetInstance().GetScene("play"));
+    int score = play ? play->GetMoney() : 0;
+
+    // 4) 打开文件（附加模式）
+    std::ofstream ofs("C:/NTHU/I2P/2025_I2P2_TowerDefense-main/2025_I2P2_TowerDefense-main/Resource/scoreboard.txt", std::ios::app);
+    //std::ofstream ofs("Resource/scoreboard.txt", std::ios::app);
+
+    /*if (!ofs.is_open()) {
+        LOG("无法打开 Resource/scoreboard.txt");
+        return;
+    }*/
+
+    if(ofs.is_open()){
+        ofs << year << "/" 
+            << month << "/" 
+            << day 
+            << name 
+            << " " 
+            << score 
+            << "\n";
+        ofs.close();
+    }
+}
