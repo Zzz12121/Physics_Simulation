@@ -17,7 +17,6 @@
 #include "LOG.hpp"
 #include "Point.hpp"
 #include "Resources.hpp"
-#include "Scene/ScoreScene.hpp"
 
 namespace Engine {
     void GameEngine::initAllegro5() {
@@ -193,22 +192,6 @@ namespace Engine {
         activeScene->Initialize();
         LOG(INFO) << "Changed to " << name << " scene";
     }
-    //my
-    /*
-    void GameEngine::ClearSceneObjects() {
-        // 先 delete 掉所有对象，避免内存泄漏
-        for (auto* obj : objects) {
-            delete obj;
-        }
-        objects.clear();
-
-        // 同样处理所有控件
-        for (auto* ctrl : controls) {
-            delete ctrl;
-        }
-        controls.clear();
-    }*/
-    //my
     void GameEngine::Start(const std::string &firstSceneName, int fps, int screenW, int screenH,
                            int reserveSamples, const char *title, const char *icon, bool freeMemoryOnSceneChanged, float deltaTimeThreshold) {
         LOG(INFO) << "Game Initializing...";

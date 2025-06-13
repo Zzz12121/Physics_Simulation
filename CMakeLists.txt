@@ -13,15 +13,13 @@ file(COPY Resource DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY allegro_monolith-5.2.dll DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable(2025_I2P2_TowerDefense
-
     Bullet/Bullet.cpp
     Bullet/Bullet.hpp
     Bullet/FireBullet.cpp
     Bullet/FireBullet.hpp
     Bullet/LaserBullet.cpp
     Bullet/LaserBullet.hpp
-    Bullet/Lm.cpp
-    Bullet/Lm.hpp
+
     # TODO HACKATHON-3 (3/3): Add the new enemy source files here
     Enemy/Enemy.cpp
     Enemy/Enemy.hpp
@@ -29,12 +27,6 @@ add_executable(2025_I2P2_TowerDefense
     Enemy/SoldierEnemy.hpp
     Enemy/TankEnemy.cpp
     Enemy/TankEnemy.hpp
-    Enemy/PlaneEnemy.cpp
-    Enemy/PlaneEnemy.hpp
-    Enemy/Spike.cpp
-    Enemy/Spike.hpp
-    Enemy/Assassin.cpp
-    Enemy/Assassin.hpp
 
     Engine/Allegro5Exception.cpp
     Engine/Allegro5Exception.hpp
@@ -60,32 +52,8 @@ add_executable(2025_I2P2_TowerDefense
     Engine/Resources.hpp
     Engine/Sprite.cpp
     Engine/Sprite.hpp
-    Engine/InputTextBox.cpp
     
     # TODO HACKATHON-2 (3/3): Add the new scene source files here
-    #my
-    Scene/SettingsScene.cpp
-    Scene/SettingsScene.hpp
-    Scene/ScoreboardScene.cpp
-    Scene/ScoreboardScene.hpp
-    Scene/ScoreScene.cpp
-    Scene/ScoreScene.hpp
-    Turret/SplashTurret.cpp
-    Turret/SplashTurret.hpp
-    Bullet/Fire.cpp
-    Bullet/Fire.hpp
-    Bullet/Bullet2.cpp
-    Bullet/Bullet2.hpp
-    Turret/UpGradeButton.cpp
-    Turret/UpGradeButton.hpp
-    Bullet/Bullet3.cpp
-    Bullet/Bullet3.hpp
-    Bullet/Landmine.cpp
-    Bullet/Landmine.hpp
-    UI/Component/InputBox.cpp
-    UI/Component/InputBox.hpp
-    
-    #my
     Scene/LoseScene.cpp
     Scene/LoseScene.hpp
     Scene/PlayScene.cpp
@@ -96,6 +64,17 @@ add_executable(2025_I2P2_TowerDefense
     Scene/StartScene.h
     Scene/WinScene.cpp
     Scene/WinScene.hpp
+    Scene/waterBallScene.hpp
+    Scene/waterBallScene.cpp
+    Scene/doublePendulumScene.hpp
+    Scene/doublePendulumScene.cpp
+    Scene/manyBallScene.hpp
+    Scene/manyBallScene.cpp
+    Scene/cutBagScene.hpp
+    Scene/cutBagScene.cpp
+
+
+    
 
     Turret/LaserTurret.cpp
     Turret/LaserTurret.hpp
@@ -130,12 +109,6 @@ IF (WIN32)
     target_link_directories(2025_I2P2_TowerDefense PUBLIC C:/allegro/lib)
     target_compile_options(2025_I2P2_TowerDefense PUBLIC ${ALLEGRO5_CFLAGS_OTHER})
     target_link_libraries(2025_I2P2_TowerDefense liballegro_monolith)
-    #my
-    target_link_libraries(2025_I2P2_TowerDefense
-        liballegro_monolith          
-        allegro_primitives           
-    )
-    #my
 ELSE()
     find_package(PkgConfig)
     pkg_check_modules(ALLEGRO5 REQUIRED allegro-5 allegro_main-5 allegro_font-5 allegro_dialog-5 allegro_primitives-5 allegro_image-5 allegro_ttf-5 allegro_audio-5 allegro_acodec-5)

@@ -12,32 +12,10 @@
 #include "Scene/PlayScene.hpp"
 #include "Turret.hpp"
 
-//
-
-
-
-#include <random>
-#include <string>
-#include <vector>
-
-
-#include "Engine/AudioHelper.hpp"
-
-
-
-#include "Engine/LOG.hpp"
-
-
-#include "UI/Animation/DirtyEffect.hpp"
-#include "UI/Animation/ExplosionEffect.hpp"
-
-#include "Engine/Resources.hpp" 
-#include <allegro5/allegro_font.h>    // 一定要加
-#include <allegro5/allegro_ttf.h>  
 PlayScene *Turret::getPlayScene() {
     return dynamic_cast<PlayScene *>(Engine::GameEngine::GetInstance().GetActiveScene());
 }
-Turret::Turret(std::string imgBase, std::string imgTurret, float x, float y, float radius, int price, float coolDown) : Sprite(imgTurret, x, y), price(price), coolDown(coolDown), imgBase(imgBase, x, y), hp(1) {
+Turret::Turret(std::string imgBase, std::string imgTurret, float x, float y, float radius, int price, float coolDown) : Sprite(imgTurret, x, y), price(price), coolDown(coolDown), imgBase(imgBase, x, y) {
     CollisionRadius = radius;
 }
 void Turret::Update(float deltaTime) {
@@ -107,15 +85,4 @@ void Turret::Draw() const {
 }
 int Turret::GetPrice() const {
     return price;
-}
-void Turret::OnExplode() {
-    getPlayScene()->EffectGroup->AddNewObject(new ExplosionEffect(Position.x, Position.y));
-    std::random_device dev;
-    std::mt19937 rng(dev());
-    std::uniform_int_distribution<std::mt19937::result_type> distId(1, 3);
-    std::uniform_int_distribution<std::mt19937::result_type> dist(1, 20);
-    for (int i = 0; i < 10; i++) {
-        // Random add 10 dirty effects.
-        getPlayScene()->GroundEffectGroup->AddNewObject(new DirtyEffect("play/dirty-" + std::to_string(distId(rng)) + ".png", dist(rng), Position.x, Position.y));
-    }
 }

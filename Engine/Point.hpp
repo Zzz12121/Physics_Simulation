@@ -71,5 +71,6 @@ namespace Engine {
         float Magnitude() const;
     };
     Point operator*(const float &lhs, const Point &rhs);
+    
 }
 #endif   // POINT_HPP

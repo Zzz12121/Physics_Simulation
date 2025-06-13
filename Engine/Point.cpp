@@ -22,6 +22,7 @@ namespace Engine {
     Point Point::operator/(const float &rhs) const {
         return Point(x / rhs, y / rhs);
     }
+
     Point Point::Normalize() const {
         if (Magnitude() == 0)
             return Point();

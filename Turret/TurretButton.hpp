@@ -18,6 +18,5 @@ public:
     TurretButton(std::string img, std::string imgIn, Engine::Sprite Base, Engine::Sprite Turret, float x, float y, int money);
     void Update(float deltaTime) override;
     void Draw() const override;
-    //int sppike() override;
 };
 #endif   // TURRETBUTTON_HPP

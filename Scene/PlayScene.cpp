@@ -7,14 +7,9 @@
 #include <queue>
 #include <string>
 #include <vector>
-#include <allegro5/allegro_primitives.h>
-
-#include "Enemy/Spike.hpp"
-#include "Turret/Turret.hpp" 
 
 #include "Enemy/Enemy.hpp"
 #include "Enemy/SoldierEnemy.hpp"
-#include "Enemy/PlaneEnemy.hpp"
 #include "Enemy/TankEnemy.hpp"
 #include "Engine/AudioHelper.hpp"
 #include "Engine/GameEngine.hpp"
@@ -24,31 +19,17 @@
 #include "PlayScene.hpp"
 #include "Turret/LaserTurret.hpp"
 #include "Turret/MachineGunTurret.hpp"
-#include "Turret/SplashTurret.hpp"
 #include "Turret/TurretButton.hpp"
 #include "UI/Animation/DirtyEffect.hpp"
 #include "UI/Animation/Plane.hpp"
 #include "UI/Component/Label.hpp"
-#include "Turret/UpGradeButton.hpp"
-#include "Bullet/Lm.hpp"  
-#include "Enemy/Spike.hpp"    
-#include "Enemy/Assassin.hpp"  
-extern int enemywinn;  
+
 // TODO HACKATHON-4 (1/3): Trace how the game handles keyboard input.
 // TODO HACKATHON-4 (2/3): Find the cheat code sequence in this file.
 // TODO HACKATHON-4 (3/3): When the cheat code is entered, a plane should be spawned and added to the scene.
 // TODO HACKATHON-5 (1/4): There's a bug in this file, which crashes the game when you win. Try to find it.
 // TODO HACKATHON-5 (2/4): The "LIFE" label are not updated when you lose a life. Try to fix it.
-//my
-/*static const int CheatCode[12] = {
-    ALLEGRO_KEY_UP,ALLEGRO_KEY_UP,
-    ALLEGRO_KEY_DOWN,ALLEGRO_KEY_DOWN,
-    ALLEGRO_KEY_LEFT,ALLEGRO_KEY_RIGHT,
-    ALLEGRO_KEY_LEFT,ALLEGRO_KEY_RIGHT,
-    ALLEGRO_KEY_B,ALLEGRO_KEY_A,
-    ALLEGRO_KEY_LSHIFT,ALLEGRO_KEY_ENTER
-};*/
-//my
+
 bool PlayScene::DebugMode = false;
 const std::vector<Engine::Point> PlayScene::directions = { Engine::Point(-1, 0), Engine::Point(0, -1), Engine::Point(1, 0), Engine::Point(0, 1) };
 const int PlayScene::MapWidth = 20, PlayScene::MapHeight = 13;
@@ -59,7 +40,7 @@ const Engine::Point PlayScene::EndGridPoint = Engine::Point(MapWidth, MapHeight 
 const std::vector<int> PlayScene::code = {
     ALLEGRO_KEY_UP, ALLEGRO_KEY_UP, ALLEGRO_KEY_DOWN, ALLEGRO_KEY_DOWN,
     ALLEGRO_KEY_LEFT, ALLEGRO_KEY_RIGHT, ALLEGRO_KEY_LEFT, ALLEGRO_KEY_RIGHT,
-    ALLEGRO_KEY_B, ALLEGRO_KEY_A, ALLEGRO_KEY_B, ALLEGRO_KEY_ENTER
+    ALLEGRO_KEY_B, ALLEGRO_KEY_A, ALLEGRO_KEYMOD_SHIFT, ALLEGRO_KEY_ENTER
 };
 Engine::Point PlayScene::GetClientSize() {
     return Engine::Point(MapWidth * BlockSize, MapHeight * BlockSize);
@@ -69,8 +50,8 @@ void PlayScene::Initialize() {
     keyStrokes.clear();
     ticks = 0;
     deathCountDown = -1;
-    lives = 5;
-    money = 5000;
+    lives = 10;
+    money = 150;
     SpeedMult = 1;
     // Add groups from bottom to top.
     AddNewObject(TileMapGroup = new Group());
@@ -81,9 +62,6 @@ void PlayScene::Initialize() {
     AddNewObject(BulletGroup = new Group());
     AddNewObject(EffectGroup = new Group());
     // Should support buttons.
-    //my
-
-    //my
     AddNewControlObject(UIGroup = new Group());
     ReadMap();
     ReadEnemyWave();
@@ -98,24 +76,6 @@ void PlayScene::Initialize() {
     Engine::Resources::GetInstance().GetBitmap("lose/benjamin-happy.png");
     // Start BGM.
     bgmId = AudioHelper::PlayBGM("play.ogg");
-    
-    //my
-    int w = Engine::GameEngine::GetInstance().GetScreenSize().x;
-    int h = Engine::GameEngine::GetInstance().GetScreenSize().y;
-    int halfW = w / 2;
-    int halfH = h / 2;
-    Engine::ImageButton *btn;
-    btn = new Engine::ImageButton(
-        "stage-select/dirt.png","stage-select/floor.png",
-        halfW + 500, halfH + 220, 200,80
-    );
-    btn->SetOnClickCallback([&](){
-
-    });
-    AddNewControlObject(btn);
-    AddNewObject(new Engine::Label("shovel","pirulen.ttf",23,halfW + 600, halfH + 260,0,0,0,255,0.5f,0.5f));
-    //AddNewObject(new Engine::Image("play/shovel.png", halfW + 600, halfH + 260, 0.5f, 0.5f,0.5f,0.5f));
-    //my
 }
 void PlayScene::Terminate() {
     AudioHelper::StopBGM(bgmId);
@@ -174,26 +134,25 @@ void PlayScene::Update(float deltaTime) {
         ticks += deltaTime;
         if (enemyWaveData.empty()) {
             if (EnemyGroup->GetObjects().empty()) {
-                // 切換到分數場景
-                Engine::GameEngine::GetInstance().ChangeScene("win");
-                return;
+                // Free resources.
+                /*delete TileMapGroup;
+                delete GroundEffectGroup;
+                delete DebugIndicatorGroup;
+                delete TowerGroup;
+                delete EnemyGroup;
+                delete BulletGroup;
+                delete EffectGroup;
+                delete UIGroup;
+                delete imgTarget;*/
+                // Win.
+                Engine::GameEngine::GetInstance().ChangeScene("win-scene");
             }
             continue;
         }
-        /*if (enemyWaveData.empty()) {
-            if (EnemyGroup->GetObjects().empty()) {
-                // Win: 切換到 WinScene 實例，直接 new 出場景
-                Engine::GameEngine::GetInstance().ChangeScene(
-                    new WinScene(&Engine::GameEngine::GetInstance())
-                );
-                return;  // 切換後立刻結束本次 Update，避免後續操作導致 crash
-            }
-            continue;
-        }*/
         auto current = enemyWaveData.front();
         if (ticks < current.second)
             continue;
-        ticks -= current.second;    
+        ticks -= current.second;
         enemyWaveData.pop_front();
         const Engine::Point SpawnCoordinate = Engine::Point(SpawnGridPoint.x * BlockSize + BlockSize / 2, SpawnGridPoint.y * BlockSize + BlockSize / 2);
         Enemy *enemy;
@@ -202,18 +161,10 @@ void PlayScene::Update(float deltaTime) {
                 EnemyGroup->AddNewObject(enemy = new SoldierEnemy(SpawnCoordinate.x, SpawnCoordinate.y));
                 break;
             // TODO HACKATHON-3 (2/3): Add your new enemy here.
-            case 2:
-                EnemyGroup->AddNewObject(enemy = new PlaneEnemy(SpawnCoordinate.x, SpawnCoordinate.y));
-                break;
+            // case 2:
             //     ...
             case 3:
                 EnemyGroup->AddNewObject(enemy = new TankEnemy(SpawnCoordinate.x, SpawnCoordinate.y));
-                break;
-            case 4:
-                EnemyGroup->AddNewObject(enemy = new Spike(SpawnCoordinate.x, SpawnCoordinate.y));
-                break;
-            case 5:
-                EnemyGroup->AddNewObject(enemy = new Assassin(SpawnCoordinate.x, SpawnCoordinate.y));
                 break;
             default:
                 continue;
@@ -227,42 +178,9 @@ void PlayScene::Update(float deltaTime) {
         // To keep responding when paused.
         preview->Update(deltaTime);
     }
-    //my
-    /*
-            for (auto it = TowerGroup->GetObjects().begin(); it != TowerGroup->GetObjects().end(); ++it) {
-                auto t = dynamic_cast<Turret *>(*it);
-                if (t->sppike()) {
-                    int tx = floor(t->Position.x / BlockSize);
-                    int ty = floor(t->Position.y / BlockSize);
-                    
-                        
-                        t->GetObjectIterator()->first = false;     
-                        TowerGroup->RemoveObject(t->GetObjectIterator());
-                        mapState[t->Position.y / BlockSize][t->Position.x/ BlockSize] = TILE_DIRT;             
-                        break;
-                    
-                }
-            }*/
-    //my
-    if (ruinedTurretLabel) {
-        ruinedTurretLabel->Text = std::string("Ruined Turret: ")
-                                + std::to_string(enemywinn) + std::string(" / 5");
-    }
 }
 void PlayScene::Draw() const {
     IScene::Draw();
-    //my
-    if (hoveredTurret) {
-     
-        al_draw_circle(
-            hoveredTurret->Position.x,
-            hoveredTurret->Position.y,
-            hoveredTurret->CollisionRadius,
-            al_map_rgba(255, 255, 255, 128),  
-            2.0f                               
-        );
-    }
-    //my
     if (DebugMode) {
         // Draw reverse BFS distance on all reachable blocks.
         for (int i = 0; i < MapHeight; i++) {
@@ -278,32 +196,6 @@ void PlayScene::Draw() const {
     }
 }
 void PlayScene::OnMouseDown(int button, int mx, int my) {
-    //my
-    if (button & 2 ) { 
-        int gx = mx / BlockSize;
-        int gy = my / BlockSize;
-        if (gx >= 0 && gx < MapWidth && gy >= 0 && gy < MapHeight && mapState[gy][gx] == TILE_OCCUPIED) {
-            
-            for (auto it = TowerGroup->GetObjects().begin(); it != TowerGroup->GetObjects().end(); ++it) {
-                auto t = dynamic_cast<Turret *>(*it);
-                if (t) {
-                    int tx = floor(t->Position.x / BlockSize);
-                    int ty = floor(t->Position.y / BlockSize);
-                    if (tx == gx && ty == gy) {
-                        
-                        t->GetObjectIterator()->first = false;     
-                        TowerGroup->RemoveObject(t->GetObjectIterator());
-                        mapState[gy][gx] = TILE_DIRT;             
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    
-
-    
-    //my
     if ((button & 1) && !imgTarget->Visible && preview) {
         // Cancel turret construct.
         UIGroup->RemoveObject(preview->GetObjectIterator());
@@ -317,25 +209,11 @@ void PlayScene::OnMouseMove(int mx, int my) {
     const int y = my / BlockSize;
     if (!preview || x < 0 || x >= MapWidth || y < 0 || y >= MapHeight) {
         imgTarget->Visible = false;
-        //return;
-    }else{
-        imgTarget->Visible = true;
-        imgTarget->Position.x = x * BlockSize;
-        imgTarget->Position.y = y * BlockSize;
+        return;
     }
-    //MY
-    hoveredTurret = nullptr;
-    for (auto obj : TowerGroup->GetObjects()) {
-        Turret* t = dynamic_cast<Turret*>(obj);
-        if (!t) continue;
-        float dx = mx - t->Position.x;
-        float dy = my - t->Position.y;
-        if (dx*dx + dy*dy <= t->CollisionRadius * t->CollisionRadius/100) {
-            hoveredTurret = t;
-            break;
-        }
-    }
-    //my
+    imgTarget->Visible = true;
+    imgTarget->Position.x = x * BlockSize;
+    imgTarget->Position.y = y * BlockSize;
 }
 void PlayScene::OnMouseUp(int button, int mx, int my) {
     IScene::OnMouseUp(button, mx, my);
@@ -383,35 +261,7 @@ void PlayScene::OnKeyDown(int keyCode) {
     } else {
         keyStrokes.push_back(keyCode);
         if (keyStrokes.size() > code.size())
-            keyStrokes.erase(keyStrokes.begin());
-        //my
-      
-
-
-        // === TODO HACKATHON-4 (3/3) ===
-        
-        if (keyStrokes.size() == code.size() &&
-            std::equal(keyStrokes.begin(), keyStrokes.end(), code.begin())) {
-  
-            
-            /*Engine::Point spawn = Engine::Point(
-               SpawnGridPoint.x * BlockSize + BlockSize/2,
-               SpawnGridPoint.y * BlockSize + BlockSize/2
-            );
-            
-            Enemy* enemy = new PlaneEnemy(spawn.x, spawn.y);
-            EnemyGroup->AddNewObject(enemy);
-           
-            enemy->UpdatePath(mapDistance);*/
-
-            
-            EarnMoney(10000);
-            EffectGroup->AddNewObject(new Plane());
-            //Plane::getPlayScene()->EffectGroup->AddNewObject(new Plane());
-            
-            keyStrokes.clear();
-        }
-        //my
+            keyStrokes.pop_front();
     }
     if (keyCode == ALLEGRO_KEY_Q) {
         // Hotkey for MachineGunTurret.
@@ -427,9 +277,6 @@ void PlayScene::OnKeyDown(int keyCode) {
 }
 void PlayScene::Hit() {
     lives--;
-    if (UILives) {
-        UILives->Text = std::string("Life ") + std::to_string(lives);
-    }
     if (lives <= 0) {
         Engine::GameEngine::GetInstance().ChangeScene("lose");
     }
@@ -477,7 +324,6 @@ void PlayScene::ReadMap() {
     }
 }
 void PlayScene::ReadEnemyWave() {
-    
     std::string filename = std::string("Resource/enemy") + std::to_string(MapId) + ".txt";
     // Read enemy file.
     float type, wait, repeat;
@@ -510,63 +356,7 @@ void PlayScene::ConstructUI() {
                            Engine::Sprite("play/turret-2.png", 1370, 136 - 8, 0, 0, 0, 0), 1370, 136, LaserTurret::Price);
     btn->SetOnClickCallback(std::bind(&PlayScene::UIBtnClicked, this, 1));
     UIGroup->AddNewControlObject(btn);
- //button 3
-    btn = new TurretButton("play/floor.png", "play/dirt.png",
-                           Engine::Sprite("play/tower-base.png", 1446, 136, 0, 0, 0, 0),
-                           Engine::Sprite("play/turret-fire.png", 1446, 136 - 8, 0, 0, 0, 0), 1446, 136, SplashTurret::Price);
-    btn->SetOnClickCallback(std::bind(&PlayScene::UIBtnClicked, this, 2));
-    UIGroup->AddNewControlObject(btn);
-//button 4
-    btn = new TurretButton("play/floor.png", "play/dirt.png",
-                           Engine::Sprite("play/tower-base.png", 1522, 136, 0, 0, 0, 0),
-                           Engine::Sprite("play/turret-3.png", 1522, 136 - 8, 0, 0, 0, 0), 1522, 136, UpGradeButton::Price);
-    btn->SetOnClickCallback(std::bind(&PlayScene::UIBtnClicked, this, 3));
-    UIGroup->AddNewControlObject(btn);
-//button 5
-    // 1. 构造一个 ImageButton，off/on 用舞台上已有的按钮贴图
-    Engine::ImageButton* mineBtn = new Engine::ImageButton(
-        "stage-select/dirt.png",   // 未按下时
-        "stage-select/floor.png",  // 按下时
-        1294 , 212,            // X, Y （紧挨第4个按钮之后）
-        76, 76                     // 宽高，与其他按钮保持一致
-    );
 
-    // 2. 绑定回调，确保捕获 this
-    mineBtn->SetOnClickCallback([this]() {
-        // 算格子
-        auto mp = Engine::GameEngine::GetInstance().GetMousePosition();
-        int gx = int(mp.x / BlockSize);
-        int gy = int(mp.y / BlockSize);
-        if (gx < 0 || gx >= MapWidth || gy < 0 || gy >= MapHeight) return;
-        // 算中心
-        float px = gx * BlockSize + BlockSize / 2.0f;
-        float py = gy * BlockSize + BlockSize / 2.0f;
-        // 放地雷
-        GroundEffectGroup->AddNewObject(new Lm(px, py));
-    });
-
-    // 3. **跟炮塔按钮一样** 加到 UIGroup 的 control list
-    UIGroup->AddNewControlObject(mineBtn);
-
-    // 4. （可选）给它加个 Label
-    UIGroup->AddNewObject(new Engine::Label(
-        "MINE", "pirulen.ttf", 16,
-        1294 + 76/2, 212 + 76 + 12,
-        255,255,255,255, 0.5f, 0.5f
-    ));
-
-//my
-//my
-    ruinedTurretLabel = new Engine::Label(
-        "Ruined Turret: 0",     // 初始文字
-        "pirulen.ttf", 16,      // 字体和字号
-        1410,            // x 坐标（可按需微调）
-        212 + 76 + 12 + 80,     // y 坐标（往下再加一些）
-        255, 0, 0, 255,         // 红色不透明
-        0.5f, 0.5f              // 文本居中
-    );
-    UIGroup->AddNewObject(ruinedTurretLabel);
-//my
     int w = Engine::GameEngine::GetInstance().GetScreenSize().x;
     int h = Engine::GameEngine::GetInstance().GetScreenSize().y;
     int shift = 135 + 25;
@@ -582,12 +372,6 @@ void PlayScene::UIBtnClicked(int id) {
         preview = new MachineGunTurret(0, 0);
     else if (id == 1 && money >= LaserTurret::Price)
         preview = new LaserTurret(0, 0);
-    else if (id == 2 && money >= SplashTurret::Price)
-        preview = new SplashTurret(0, 0);
-    else if (id == 3 && money >= UpGradeButton::Price)
-        preview = new UpGradeButton(0, 0);
-    /*else if (id == 4 )
-        preview = new UpGradeButton(0, 0);*/
     if (!preview)
         return;
     preview->Position = Engine::GameEngine::GetInstance().GetMousePosition();
@@ -635,33 +419,12 @@ std::vector<std::vector<int>> PlayScene::CalculateBFSDistance() {
         return map;
     que.push(Engine::Point(MapWidth - 1, MapHeight - 1));
     map[MapHeight - 1][MapWidth - 1] = 0;
-    //my
-    const int dx[4] = { 1, -1, 0,  0 };
-    const int dy[4] = { 0,  0, 1, -1 };
-    //my
     while (!que.empty()) {
         Engine::Point p = que.front();
         que.pop();
         // TODO PROJECT-1 (1/1): Implement a BFS starting from the most right-bottom block in the map.
         //               For each step you should assign the corresponding distance to the most right-bottom block.
         //               mapState[y][x] is TILE_DIRT if it is empty.
-        // my
-        
-        int d = map[p.y][p.x];
-
-        for (int dir = 0; dir < 4; dir++) {
-            int nx = p.x + dx[dir];
-            int ny = p.y + dy[dir];
-            
-            if (nx < 0 || nx >= MapWidth || ny < 0 || ny >= MapHeight)
-                continue;
-            
-            if (mapState[ny][nx] == TILE_DIRT && map[ny][nx] == -1) {
-                map[ny][nx] = d + 1;
-                que.push(Engine::Point(nx, ny));
-            }
-        }
-        //my
     }
     return map;
 }

@@ -8,8 +8,7 @@
 #include "Engine/Point.hpp"
 #include "MachineGunTurret.hpp"
 #include "Scene/PlayScene.hpp"
-#include "Enemy/Spike.hpp"
-#include "Engine/Group.hpp"
+
 const int MachineGunTurret::Price = 50;
 MachineGunTurret::MachineGunTurret(float x, float y)
     : Turret("play/tower-base.png", "play/turret-1.png", x, y, 200, Price, 0.5) {
@@ -23,15 +22,4 @@ void MachineGunTurret::CreateBullet() {
     // Change bullet position to the front of the gun barrel.
     getPlayScene()->BulletGroup->AddNewObject(new FireBullet(Position + normalized * 36, diff, rotation, this));
     AudioHelper::PlayAudio("gun.wav");
-}/*
-int MachineGunTurret::sppike(){
-    PlayScene *scene = getPlayScene();
-    
-    for(auto &it : scene->EnemyGroup->GetObjects()){
-        Engine::Point diff = it->Position - Position;
-        if(diff.x<2 || diff.y < 2){
-            return 0;
-        }
-        return 1;
-    }
-}*/
+}

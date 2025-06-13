@@ -1,12 +1,9 @@
 #include <algorithm>
 #include <string>
-//my
 
-
-//my
 #include "Engine/Point.hpp"
 #include "Slider.hpp"
-#include <allegro5/allegro_primitives.h> 
+
 Slider::Slider(float x, float y, float w, float h)
     : ImageButton("stage-select/slider.png", "stage-select/slider-blue.png", x, y),
       Bar("stage-select/bar.png", x, y, w, h),
@@ -18,26 +15,20 @@ Slider::Slider(float x, float y, float w, float h)
 }
 void Slider::Draw() const {
     // TODO HACKATHON-5 (3/4): The slider's component should be drawn here.
-    Bar.Draw();
-    End1.Draw();
-    End2.Draw();
-    // Draw the knob (ImageButton)
-    ImageButton::Draw();
-    
+    Bar.Draw();      // 畫背景條
+    End1.Draw();     // 左端點裝飾
+    End2.Draw();     // 右端點裝飾
+    ImageButton::Draw(); // 中央拖動滑塊（就是這個 Slider 本體）
 }
 void Slider::SetOnValueChangedCallback(std::function<void(float value)> onValueChangedCallback) {
     OnValueChangedCallback = onValueChangedCallback;
 }
 void Slider::SetValue(float value) {
     // TODO HACKATHON-5 (4/4): Set the value of the slider and call the callback.
-    // Clamp to [0,1]
-    value = std::clamp(value, 0.0f, 1.0f);
-    // Compute new knob position
-    float knobX = Bar.Position.x + value * Bar.Size.x;
-    float knobY = Bar.Position.y + Bar.Size.y / 2.0f;
-    Position.x = knobX;
-    Position.y = knobY;
-    // Invoke callback
+    value = std::clamp(value, Min, Max);  // 限制在範圍內
+    Position.x = Bar.Position.x + Bar.Size.x * value;  // 移動滑塊（本體）
+    Position.y = Bar.Position.y + Bar.Size.y / 2;
+
     if (OnValueChangedCallback) {
         OnValueChangedCallback(value);
     }

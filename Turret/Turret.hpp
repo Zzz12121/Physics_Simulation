@@ -20,7 +20,7 @@ protected:
     PlayScene *getPlayScene();
     // Reference: Design Patterns - Factory Method.
     virtual void CreateBullet() = 0;
-    int hp;
+
 public:
     bool Enabled = true;
     bool Preview = false;
@@ -29,11 +29,5 @@ public:
     void Update(float deltaTime) override;
     void Draw() const override;
     int GetPrice() const;
-    bool TakeDamage(int dmg) {
-        hp -= dmg;
-        return hp <= 0;
-    }
-    void OnExplode();
-    //virtual int sppike() = 0;
 };
 #endif   // TURRET_HPP

@@ -23,7 +23,6 @@ Plane::Plane() : Sprite("play/plane.png", -100, Engine::GameEngine::GetInstance(
     }
     shockwave = Engine::Resources::GetInstance().GetBitmap("play/shockwave.png");
     Velocity = Engine::Point(800, 0);
-    
 }
 void Plane::Update(float deltaTime) {
     int phase;
@@ -78,7 +77,6 @@ void Plane::Update(float deltaTime) {
             break;
         case 3:
             getPlayScene()->EffectGroup->RemoveObject(objectIterator);
-            //Engine::GameEngine::GetInstance().ChangeScene("win");
             return;
     }
     Sprite::Update(deltaTime);

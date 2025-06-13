@@ -1,5 +1,4 @@
 #include <allegro5/color.h>
-
 #include "Engine/GameEngine.hpp"
 #include "Engine/IScene.hpp"
 #include "Scene/PlayScene.hpp"

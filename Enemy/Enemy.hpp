@@ -19,7 +19,7 @@ protected:
     int money;
     PlayScene *getPlayScene();
     virtual void OnExplode();
-    float max_hp = hp;
+
 public:
     float reachEndTime;
     std::list<Turret *> lockedTurrets;

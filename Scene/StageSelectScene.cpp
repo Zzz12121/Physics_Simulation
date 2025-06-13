@@ -4,7 +4,7 @@
 #include <cmath>
 
 #include "Engine/GameEngine.hpp"
-
+#include "Engine/AudioHelper.hpp"
 #include "Engine/Point.hpp"
 #include "PlayScene.hpp"
 #include "UI/Component/ImageButton.hpp"
@@ -43,50 +43,24 @@ void StageSelectScene::Initialize()
     // bgmInstance = AudioHelper::PlaySample("select.ogg", true, AudioHelper::BGMVolume);
 
     // 初始化其他 UI（你已註解掉的可視需求再開啟）
-}
 
-/*void StageSelectScene::Update(float deltaTime)
-{
-    angle += angularVelocity * deltaTime;
-    ballVel.y += gravity * deltaTime;
-    ballPos = ballPos + ballVel * deltaTime;
+    auto incBtn = new Engine::ImageButton("stage-select/dirt.png", "stage-select/floor.png", halfW + 300, halfH / 2 + 470, 100, 60);
+    incBtn->SetOnClickCallback([this]() {
+        if (polygonSides < 20) polygonSides++;
+    });
+    AddNewControlObject(incBtn);
+    AddNewObject(new Engine::Label("+", "pirulen.ttf", 36, halfW + 350, halfH / 2 + 500, 0, 0, 0, 255, 0.5, 0.5));
 
-    // 計算旋轉六邊形邊與法線
-    verts.clear();
-    norms.clear();
-    for (int i = 0; i < 6; ++i)
-    {
-        float a0 = angle + i * ALLEGRO_PI / 3;
-        float a1 = angle + (i + 1) * ALLEGRO_PI / 3;
-        Vec2 vi(hexRadius * cos(a0), hexRadius * sin(a0));
-        Vec2 vj(hexRadius * cos(a1), hexRadius * sin(a1));
-        Vec2 edge = vj - vi;
-        Vec2 normal = Normalize(Vec2{edge.y, -edge.x});
-        verts.push_back(vi);
-        norms.push_back(normal);
+    auto decBtn = new Engine::ImageButton("stage-select/dirt.png", "stage-select/floor.png", halfW - 400, halfH / 2 + 470, 100, 60);
+    decBtn->SetOnClickCallback([this]() {
+        if (polygonSides > 3) polygonSides--;
+    });
+    AddNewControlObject(decBtn);
+    AddNewObject(new Engine::Label("-", "pirulen.ttf", 36, halfW - 350, halfH / 2 + 500, 0, 0, 0, 255, 0.5, 0.5));
     }
 
-    // 碰撞檢查
-    for (int i = 0; i < 6; ++i)
-    {
-        Vec2 a = verts[i];
-        Vec2 n = norms[i];
-        float dist = Dot(ballPos - a, n);
-        if (dist > -ballRadius)
-        {
-            ballPos = ballPos - n * (dist + ballRadius);
-            float vn = Dot(ballVel, n);
-            if (vn > 0)
-            {
-                Vec2 vt = ballVel - n * vn;
-                vt = vt * (1.0f - friction);
-                ballVel = vt - n * vn * restitution;
-            }
-        }
-    }
-}*/
 void StageSelectScene::Update(float deltaTime)
-{
+{   
     // --- 處理滑鼠拖曳小球 ---
     ALLEGRO_MOUSE_STATE ms;
     al_get_mouse_state(&ms);
@@ -95,7 +69,7 @@ void StageSelectScene::Update(float deltaTime)
     Engine::Point screenCenter = Engine::GameEngine::GetInstance().GetScreenSize() / 2;
     Vec2 localMouse(
         static_cast<float>(ms.x - screenCenter.x),
-        static_cast<float>(ms.y - screenCenter.y)
+        static_cast<float>(ms.y - screenCenter.y )
     );
 
     // 左鍵按下：判定是否開始拖曳
@@ -127,25 +101,39 @@ void StageSelectScene::Update(float deltaTime)
         ballPos.y += ballVel.y * deltaTime;
     }
 
-    // —— 以下不動：計算六邊形頂點、法線、碰撞修正 —— 
+    angle += angularVelocity * deltaTime;
+    ballVel.y += gravity * deltaTime;
+    ballPos = ballPos + ballVel * deltaTime;
+
+    Vec2 center = Vec2{
+    Engine::GameEngine::GetInstance().GetScreenSize().x / 2.0f,
+    Engine::GameEngine::GetInstance().GetScreenSize().y / 2.0f
+};
+
     verts.clear();
     norms.clear();
-    for (int i = 0; i < 6; ++i) {
-        float a0 = angle + i * ALLEGRO_PI / 3;
-        float a1 = angle + (i + 1) * ALLEGRO_PI / 3;
-        Vec2 vi(hexRadius * cos(a0), hexRadius * sin(a0));
-        Vec2 vj(hexRadius * cos(a1), hexRadius * sin(a1));
+    for (int i = 0; i < polygonSides; ++i) {
+        float a0 = angle + i * 2 * ALLEGRO_PI / polygonSides;
+        float a1 = angle + (i + 1) * 2 * ALLEGRO_PI / polygonSides;
+        Vec2 vi = Vec2{hexRadius * std::cos(a0), hexRadius * std::sin(a0)};
+        Vec2 vj = Vec2{hexRadius * std::cos(a1), hexRadius * std::sin(a1)};
         Vec2 edge = vj - vi;
         Vec2 normal = Normalize(Vec2{edge.y, -edge.x});
+
         verts.push_back(vi);
         norms.push_back(normal);
     }
 
-    for (int i = 0; i < 6; ++i) {
-        Vec2 a = verts[i], n = norms[i];
-        float dist = Dot(ballPos - a, n);
+    for (int i = 0; i < polygonSides; ++i) {
+        Vec2 a = verts[i] + center;
+        Vec2 n = norms[i];
+        Vec2 relBallPos = ballPos + center;
+
+        float dist = Dot(relBallPos - a, n);
         if (dist > -ballRadius) {
-            ballPos = ballPos - n * (dist + ballRadius);
+            relBallPos = relBallPos - n * (dist + ballRadius);
+            ballPos = relBallPos - center;
+
             float vn = Dot(ballVel, n);
             if (vn > 0) {
                 Vec2 vt = ballVel - n * vn;
@@ -163,20 +151,18 @@ void StageSelectScene::Draw() const
 
     Engine::Point center = Engine::GameEngine::GetInstance().GetScreenSize() / 2;
 
-    // 繪製旋轉六邊形
-    for (int i = 0; i < 6; ++i)
-    {
-        int j = (i + 1) % 6;
+    for (int i = 0; i < polygonSides; ++i) {
+        int j = (i + 1) % polygonSides;
         Vec2 vi = verts[i], vj = verts[j];
         al_draw_line(center.x + vi.x, center.y + vi.y,
                      center.x + vj.x, center.y + vj.y,
                      al_map_rgb(200, 200, 200), 2.0f);
     }
 
-    // 畫球
     al_draw_filled_circle(center.x + ballPos.x, center.y + ballPos.y,
                           ballRadius, al_map_rgb(255, 80, 80));
 }
+
 
 void StageSelectScene::BackOnClick(int stage)
 {
@@ -189,5 +175,3 @@ void StageSelectScene::Terminate()
     // bgmInstance = nullptr;
     IScene::Terminate();
 }
-
-

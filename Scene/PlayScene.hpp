@@ -19,15 +19,11 @@ namespace Engine {
 
 class PlayScene final : public Engine::IScene {
 private:
-    /*enum TileType {
+    enum TileType {
         TILE_DIRT,
         TILE_FLOOR,
         TILE_OCCUPIED,
-    };*/
-    //my
-    //std::vector<int> keyStrokes;
-    Turret* hoveredTurret = nullptr;
-    //my
+    };
     ALLEGRO_SAMPLE_ID bgmId;
     std::shared_ptr<ALLEGRO_SAMPLE_INSTANCE> deathBGMInstance;
 
@@ -37,14 +33,6 @@ protected:
     int SpeedMult;
 
 public:
-//my
-    enum TileType {
-        TILE_DIRT,
-        TILE_FLOOR,
-        TILE_OCCUPIED,
-    };
-    //my
-    //bool sppike = false;
     static bool DebugMode;
     static const std::vector<Engine::Point> directions;
     static const int MapWidth, MapHeight;
@@ -93,7 +81,6 @@ public:
     void UIBtnClicked(int id);
     bool CheckSpaceValid(int x, int y);
     std::vector<std::vector<int>> CalculateBFSDistance();
-    Engine::Label *ruinedTurretLabel = nullptr;
     // void ModifyReadMapTiles();
 };
 #endif   // PLAYSCENE_HPP

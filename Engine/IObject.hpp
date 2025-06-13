@@ -70,7 +70,6 @@ namespace Engine {
         /// </summary>
         /// <param name="deltaTime">Time elapsed since last update, can be used to calculate value changes.</param>
         virtual void Update(float deltaTime);
-        
     };
 }
 #endif   // IOBJECT_HPP

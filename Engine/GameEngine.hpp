@@ -155,10 +155,6 @@ namespace Engine {
         /// </summary>
         /// <returns>The Singleton instance of GameEngine.</returns>
         static GameEngine &GetInstance();
-
-        //my
-        void ClearSceneObjects();
-        //my
     };
 }
 #endif   // GAMEENGINE_HPP
