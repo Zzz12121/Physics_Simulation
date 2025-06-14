@@ -6,10 +6,10 @@
     - Mini map	
     - Every simulator is interactive with mouse
     - Parameter adjustments that can quickly see the effects 
-        - fabric's stiffness
-        - friction between the floor and ball in collision
-        - the mass, length, gravity in double pendulum
-        - the number of edges in n-polygon and ball
+        - Fabric's stiffness
+        - Friction between the floor and ball in collision
+        - The mass, length, gravity in double pendulum
+        - The number of edges in n-polygon and ball
     - Display the velocity vector (value and direction) of each ball in collision
 
 -[Hard]
@@ -18,10 +18,10 @@
         - Simulate the effect of a ball pressing against cloth
         - Accurately display the effect of water ball bouncing
         - Different effects on the sides and the middle of the water ball
-        - use Position-Based Dynamics to implement the waterball
-        - In order to simulate realistically, we add damping to all stretchable objects.
+        - Use Position-Based Dynamics to implement the waterball
+        - In order to simulate realistically, we add damping to all stretchable objects
 
 ##Individual Contribution
-113062228 游紫然 (33%) : Physics effect implementation, Git, Map editor
+113062228 游紫然 (33%) : Physics effect and logic implementation, Git, Map editor
 113062229 呂翊廷 (33%) : Parameter input
 113062325 賴思宇 (33%) : Simulator architecture , mini map
