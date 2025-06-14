@@ -16,7 +16,7 @@ struct Ball
     bool isDragged;
     ALLEGRO_COLOR color;
 };
-
+現在的功能是會有矩形的牆壁，我希望可以做成按e可以編輯舉行的位置，按s可以儲存，接ㄒㄧ
 struct Obstacle
 {
     float x, y;

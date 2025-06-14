@@ -28,7 +28,7 @@ void StartScene::Initialize() {
     int halfH = h / 2;
     Engine::ImageButton* btn;
 
-    AddNewObject(new Engine::Label("Tower Defense", "pirulen.ttf", 120,
+    AddNewObject(new Engine::Label("Physics Simulator", "pirulen.ttf", 120,
         halfW, halfH / 3 + 50, 10, 255, 255, 255, 0.5, 0.5));
 
     btn = new Engine::ImageButton("stage-select/dirt.png", "stage-select/floor.png",
@@ -46,14 +46,14 @@ void StartScene::Initialize() {
     AddNewObject(new Engine::Label("CutBag", "pirulen.ttf", 40,
         halfW + 500 , halfH / 2 + 150, 0, 0, 0, 255, 0.5, 0.5));
 
-
+/*
     btn = new Engine::ImageButton("stage-select/dirt.png", "stage-select/floor.png",
         halfW - 200, halfH * 3 / 2 - 200, 400, 100);
     btn->SetOnClickCallback(std::bind(&StartScene::SettingsOnClick, this, 2));
     AddNewControlObject(btn);
     AddNewObject(new Engine::Label("Settings", "pirulen.ttf", 48,
         halfW, halfH * 3 / 2 - 150, 0, 0, 0, 255, 0.5, 0.5));
-
+*/
     btn = new Engine::ImageButton("stage-select/dirt.png", "stage-select/floor.png",
         halfW - 200, halfH * 3 / 2 - 80, 400, 100);
     btn->SetOnClickCallback(std::bind(&StartScene::WaterBallOnClick, this, 3));
@@ -72,7 +72,7 @@ void StartScene::Initialize() {
         halfW - 700, halfH / 2 + 100, 400, 100);
     btn->SetOnClickCallback(std::bind(&StartScene::ManyBallOnClick, this, 5));
     AddNewControlObject(btn);
-    AddNewObject(new Engine::Label("many-ball", "pirulen.ttf", 40,
+    AddNewObject(new Engine::Label("Collision", "pirulen.ttf", 40,
         halfW-500, halfH / 2 + 150, 0, 0, 0, 255, 0.5, 0.5));
 
 }
@@ -82,16 +82,16 @@ void StartScene::Terminate() {
 }
 void StartScene::PlayOnClick(int stage) {
     Engine::GameEngine::GetInstance().ChangeScene("stage-select");
-}
+}/*
 void StartScene::SettingsOnClick(int stage) {
     Engine::GameEngine::GetInstance().ChangeScene("settings");
-}
+}*/
 void StartScene::WaterBallOnClick(int stage) {
     Engine::GameEngine::GetInstance().ChangeScene("waterBall");
 }
 
 void StartScene::DoublePendulumOnClick(int stage) {
-    // TODO: 根據你的場景名稱替換這裡的 DoublePendulumScene
+   
     Engine::GameEngine::GetInstance().ChangeScene("pendulum");
 }
 
