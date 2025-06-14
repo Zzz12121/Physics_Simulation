@@ -3,10 +3,10 @@
     - Simple Physics simulation system(Ball fall down and bounce back with energy lost and friction)
     - Map editor	
     - Mini map	
-    - Parameter adjustment
+    
 -[Hard]
     - Advanced physics simulation(cloth, collision, double pendulum)
-    - 
+    - Parameter adjustment
 ##Individual Contribution
 113062228 游紫然 (33%) : Physics effect implementation, Git, Map editor
 113062229 呂翊廷 (33%) : Parameter input
