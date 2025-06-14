@@ -1,125 +1,123 @@
 #include "Scene/manyBallScene.hpp"
 #include "Engine/GameEngine.hpp"
 #include <allegro5/allegro_primitives.h>
+#include <allegro5/allegro_audio.h>
 #include <cmath>
 #include <cstdlib>
-#include <allegro5/allegro_audio.h>
-#include "Engine/GameEngine.hpp"
+#include <fstream>
+#include <iomanip>
+#include <random>
+
 #include "Engine/AudioHelper.hpp"
 #include "Engine/Point.hpp"
+#include "Engine/Resources.hpp"
 #include "PlayScene.hpp"
 #include "UI/Component/ImageButton.hpp"
 #include "UI/Component/Label.hpp"
-#include "Engine/Resources.hpp"
-#include <random>
-#include <iomanip>
 
 constexpr int SCREEN_W = 1200;
 constexpr int SCREEN_H = 700;
 constexpr float MAX_SPEED = 1000.0f;
-float friction = 0.99f;
 constexpr float MIN_VELOCITY = 0.5f;
 constexpr float DRAG_SPEED_FACTOR = 10.0f;
+constexpr float VEC_PX_PER_SPEED = 0.15f;
+
+float friction = 0.99f;
 
 void manyBallScene::Initialize()
 {
-    // 使用固定的螢幕尺寸
-    int w = SCREEN_W;
-    int h = SCREEN_H;
-    int halfW = w / 2;
-    int halfH = h / 2;
-
     balls.clear();
     obstacles.clear();
     draggedBall = nullptr;
+    draggedObs = nullptr;
+    editMode = false;
+    if (!miniMap)
+        miniMap = al_create_bitmap(MINI_W, MINI_H);
+    // load_map("map.txt");
 
-    // 生成隨機數生成器
     static std::random_device rd;
     static std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> x_dist(50.0f, SCREEN_W - 50.0f); // 球的 x 範圍
-    std::uniform_real_distribution<float> y_dist(50.0f, SCREEN_H - 50.0f); // 球的 y 範圍
-    std::uniform_real_distribution<float> vel_dist(-100.0f, 100.0f);       // 速度範圍
-    const float ball_radius = 20.0f;
-    const int max_attempts = 100; // 最大嘗試次數，避免無限迴圈
 
-    // 生成 10 個障礙物
-    for (int i = 0; i < 10; ++i)
+    if (obstacles.empty())
     {
-        Obstacle obs;
-        int attempts = 0;
-        do
+        const int max_attempts = 100;
+        for (int i = 0; i < 10; ++i)
         {
-            obs = generate_random_obstacle();
-            attempts++;
-            if (attempts > max_attempts)
+            Obstacle obs;
+            int tries = 0;
+            do
             {
-                break; // 避免無限迴圈
-            }
-        } while (is_obstacle_overlapping(obs, obstacles));
-        obstacles.push_back(obs);
+                obs = generate_random_obstacle();
+            } while (is_obstacle_overlapping(obs, obstacles) && ++tries < max_attempts);
+            obstacles.push_back(obs);
+        }
     }
 
-    // 生成 10 個球
+    // 球體
+    std::uniform_real_distribution<float> x_dist(50.0f, SCREEN_W - 50.0f);
+    std::uniform_real_distribution<float> y_dist(50.0f, SCREEN_H - 50.0f);
+    std::uniform_real_distribution<float> vel_dist(-100.0f, 100.0f);
+
+    const float ball_radius = 20.0f;
+    const int max_attempts = 100;
     for (int i = 0; i < 10; ++i)
     {
         Ball b;
-        int attempts = 0;
+        int tries = 0;
         do
         {
             b.x = x_dist(gen);
             b.y = y_dist(gen);
             b.radius = ball_radius;
-            attempts++;
-            if (attempts > max_attempts)
-            {
-                break; // 避免無限迴圈
-            }
-        } while (is_ball_overlapping(b, balls, obstacles));
+        } while (is_ball_overlapping(b, balls, obstacles) && ++tries < max_attempts);
         b.vx = vel_dist(gen);
         b.vy = vel_dist(gen);
         b.angularVel = 0;
         b.isDragged = false;
         b.color = random_color();
         balls.push_back(b);
-     }
+    }
 
-    int rightX = w - 200;
-    int topY = 100;
+    int w = SCREEN_W, h = SCREEN_H;
+    int rightX = w - 200, topY = 100;
 
-        // 顯示標題 "FRICTION"
     AddNewObject(new Engine::Label("FRICTION", "pirulen.ttf", 28,
-        rightX + 400, topY+200, 255, 255, 255, 255, 0.5, 0.5));
+                                   rightX + 400, topY + 200, 255, 255, 255, 255, 0.5, 0.5));
 
-    // friction 數值 label（記得在 class 中宣告 frictionLabel）
-    frictionLabel = new Engine::Label(std::to_string(friction).substr(0, 4), "pirulen.ttf", 24,
-        rightX + 400, topY + 240, 255, 255, 0, 255, 0.5, 0.5);
+    frictionLabel = new Engine::Label(std::to_string(friction).substr(0, 4),
+                                      "pirulen.ttf", 24, rightX + 400, topY + 240,
+                                      255, 255, 0, 255, 0.5, 0.5);
     AddNewObject(frictionLabel);
 
-    // 加按鈕
     auto incBtn = new Engine::ImageButton("stage-select/dirt.png", "stage-select/floor.png",
-        rightX + 450, topY + 230, 40, 40);
-    incBtn->SetOnClickCallback([this]() {
+                                          rightX + 450, topY + 230, 40, 40);
+    incBtn->SetOnClickCallback([this]()
+                               {
         friction = std::min(1.0f, friction + 0.01f);
-        frictionLabel->Text = std::to_string(friction).substr(0, 4);
-    });
+        frictionLabel->Text = std::to_string(friction).substr(0, 4); });
     AddNewControlObject(incBtn);
-    AddNewObject(new Engine::Label("+", "pirulen.ttf", 24, rightX + 470, topY + 250, 0, 0, 0, 255, 0.5, 0.5));
+    AddNewObject(new Engine::Label("+", "pirulen.ttf", 24,
+                                   rightX + 470, topY + 250, 0, 0, 0, 255, 0.5, 0.5));
 
-    // 減按鈕
     auto decBtn = new Engine::ImageButton("stage-select/dirt.png", "stage-select/floor.png",
-        rightX + 310, topY + 230, 40, 40);
-    decBtn->SetOnClickCallback([this]() {
+                                          rightX + 310, topY + 230, 40, 40);
+    decBtn->SetOnClickCallback([this]()
+                               {
         friction = std::max(0.9f, friction - 0.01f);
-        frictionLabel->Text = std::to_string(friction).substr(0, 4);
-    });
+        frictionLabel->Text = std::to_string(friction).substr(0, 4); });
     AddNewControlObject(decBtn);
-    AddNewObject(new Engine::Label("-", "pirulen.ttf", 24, rightX + 330, topY + 250, 0, 0, 0, 255, 0.5, 0.5));
+    AddNewObject(new Engine::Label("-", "pirulen.ttf", 24,
+                                   rightX + 330, topY + 250, 0, 0, 0, 255, 0.5, 0.5));
 
-    // 添加返回按鈕
-    Engine::ImageButton *btn = new Engine::ImageButton("stage-select/dirt.png", "stage-select/floor.png", halfW + 600, halfH - 350, 400, 100);
-    btn->SetOnClickCallback(std::bind(&manyBallScene::BackOnClick, this, 2));
-    AddNewControlObject(btn);
-    AddNewObject(new Engine::Label("BACK", "pirulen.ttf", 48, halfW + 800, halfH - 300, 0, 0, 0, 255, 0.5, 0.5));
+    int halfW = w / 2, halfH = h / 2;
+    auto backBtn = new Engine::ImageButton("stage-select/dirt.png", "stage-select/floor.png",
+                                           halfW + 600, halfH - 350, 400, 100);
+    backBtn->SetOnClickCallback(std::bind(&manyBallScene::BackOnClick, this, 2));
+    AddNewControlObject(backBtn);
+    AddNewObject(new Engine::Label("BACK", "pirulen.ttf", 48,
+                                   halfW + 800, halfH - 300, 0, 0, 0, 255, 0.5, 0.5));
+
+    miniMap = al_create_bitmap(MINI_W, MINI_H);
 }
 
 void manyBallScene::Terminate()
@@ -127,7 +125,14 @@ void manyBallScene::Terminate()
     balls.clear();
     obstacles.clear();
     draggedBall = nullptr;
-    IScene::Terminate(); // 呼叫基類的 Terminate
+    draggedObs = nullptr;
+    IScene::Terminate();
+    if (miniMap)
+    {
+        al_destroy_bitmap(miniMap);
+        miniMap = nullptr;
+    }
+    IScene::Terminate();
 }
 
 void manyBallScene::Update(float deltaTime)
@@ -143,11 +148,13 @@ void manyBallScene::Update(float deltaTime)
         }
         else
         {
+
             ball.vx = (mouseX - ball.x) * DRAG_SPEED_FACTOR;
             ball.vy = (mouseY - ball.y) * DRAG_SPEED_FACTOR;
             ball.x = mouseX;
             ball.y = mouseY;
         }
+        // 邊界反彈
         if (ball.x - ball.radius < 0)
         {
             ball.x = ball.radius;
@@ -168,70 +175,206 @@ void manyBallScene::Update(float deltaTime)
             ball.y = SCREEN_H - ball.radius;
             ball.vy = -ball.vy;
         }
+        // 與牆碰撞
         for (const auto &obs : obstacles)
-        {
             resolve_ball_obstacle_collision(ball, obs);
-        }
     }
-
-    // 處理球與球之間的碰撞
+    // 球與球碰撞
     for (size_t i = 0; i < balls.size(); ++i)
-    {
         for (size_t j = i + 1; j < balls.size(); ++j)
-        {
             resolve_ball_collision(balls[i], balls[j]);
-        }
-    }
+    IScene::Update(deltaTime);
 }
-
 void manyBallScene::Draw() const
 {
+
     al_clear_to_color(al_map_rgb(0, 0, 0));
     IScene::Draw();
 
-    al_draw_rectangle(0, 0, SCREEN_W, SCREEN_H, al_map_rgb(255, 255, 255), 3);
+    // 外框
+    al_draw_rectangle(0, 0, SCREEN_W, SCREEN_H,
+                      al_map_rgb(255, 255, 255), 3);
+
+    // 牆
     for (const auto &obs : obstacles)
     {
-        al_draw_filled_rectangle(obs.x, obs.y, obs.x + obs.width, obs.y + obs.height, obs.color);
+        al_draw_filled_rectangle(obs.x, obs.y,
+                                 obs.x + obs.width, obs.y + obs.height,
+                                 obs.color);
+        if (editMode)
+        {
+            al_draw_rectangle(obs.x, obs.y,
+                              obs.x + obs.width, obs.y + obs.height,
+                              al_map_rgb(255, 255, 0), 2);
+        }
     }
 
+    // 球
     for (const auto &ball : balls)
     {
         al_draw_filled_circle(ball.x, ball.y, ball.radius, ball.color);
-        al_draw_circle(ball.x, ball.y, ball.radius, al_map_rgb(255, 255, 255), 2);
+        al_draw_circle(ball.x, ball.y, ball.radius,
+                       al_map_rgb(255, 255, 255), 2);
 
-        // 繪製速度向量（白色線條從圓心到邊緣）
         float speed = std::sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-        if (speed > MIN_VELOCITY) // 只有當速度足夠大時才繪製
+        if (speed > MIN_VELOCITY)
         {
             float angle = std::atan2(ball.vy, ball.vx);
-            float endX = ball.x + ball.radius * std::cos(angle);
-            float endY = ball.y + ball.radius * std::sin(angle);
-            al_draw_line(ball.x, ball.y, endX, endY, al_map_rgb(255, 255, 255), 2.0f);
+
+            // 依速度決定線長：speed × 比例，並限制上限
+            float vecLen = speed * VEC_PX_PER_SPEED;
+            vecLen = std::min(vecLen, ball.radius * 4.0f); // 最長=4倍半徑
+
+            float endX = ball.x + vecLen * std::cos(angle);
+            float endY = ball.y + vecLen * std::sin(angle);
+
+            al_draw_line(ball.x, ball.y, endX, endY,
+                         al_map_rgb(255, 255, 255), 2.0f);
+        }
+        char buf[16];
+        sprintf(buf, "%.1f", speed);
+        al_draw_text(Engine::Resources::GetInstance()
+                         .GetFont("pirulen.ttf", 16)
+                         .get(),
+                     al_map_rgb(255, 255, 0),
+                     ball.x, ball.y - ball.radius - 16,
+                     ALLEGRO_ALIGN_CENTER, buf);
+    }
+
+    // 小地圖繪製邏輯
+    ALLEGRO_DISPLAY *display = al_get_current_display();
+    ALLEGRO_BITMAP *backbuffer = al_get_backbuffer(display);
+
+    // 切換繪製目標到 miniMap
+    al_set_target_bitmap(miniMap);
+    al_clear_to_color(al_map_rgb(0, 0, 0)); // 黑底小地圖
+
+    // 繪製障礙物到小地圖
+    for (const auto &obs : obstacles)
+    {
+        float scaleX = MINI_W / static_cast<float>(SCREEN_W);
+        float scaleY = MINI_H / static_cast<float>(SCREEN_H);
+        al_draw_filled_rectangle(
+            obs.x * scaleX,
+            obs.y * scaleY,
+            (obs.x + obs.width) * scaleX,
+            (obs.y + obs.height) * scaleY,
+            obs.color);
+    }
+
+    // 繪製球到小地圖
+    for (const auto &ball : balls)
+    {
+        float scaleX = MINI_W / static_cast<float>(SCREEN_W);
+        float scaleY = MINI_H / static_cast<float>(SCREEN_H);
+        al_draw_filled_circle(
+            ball.x * scaleX,
+            ball.y * scaleY,
+            ball.radius * 0.5f * std::min(scaleX, scaleY), // 縮小畫
+            ball.color);
+    }
+
+    // 切回主畫面
+    al_set_target_bitmap(backbuffer);
+
+    // 把小地圖畫到左下角
+    int displayW = al_get_display_width(al_get_current_display());
+    int displayH = al_get_display_height(al_get_current_display());
+    int miniX = displayW - MINI_W - 10;
+    int miniY = displayH - MINI_H - 10;
+    al_draw_bitmap(miniMap, miniX, miniY, 0);
+    al_draw_rectangle(miniX, miniY, miniX + MINI_W, miniY + MINI_H, al_map_rgb(255, 255, 255), 2);
+    // al_clear_to_color(al_map_rgb(0, 0, 0));
+    /*
+        // ② 先畫世界 (邊框、牆、球)──這段就是舊版 Draw 裡的世界迴圈
+        al_draw_rectangle(0, 0, SCREEN_W, SCREEN_H,
+                          al_map_rgb(255, 255, 255), 3);
+
+        for (const auto &obs : obstacles) {
+            al_draw_filled_rectangle(obs.x, obs.y,
+                                     obs.x + obs.width, obs.y + obs.height,
+                                     obs.color);
+        }
+        for (const auto &ball : balls) {
+            al_draw_filled_circle(ball.x, ball.y, ball.radius, ball.color);
+            al_draw_circle(ball.x, ball.y, ball.radius,
+                           al_map_rgb(255, 255, 255), 2);
+
+            float speed  = std::sqrt(ball.vx*ball.vx + ball.vy*ball.vy);
+            if (speed > MIN_VELOCITY) {
+                float angle  = std::atan2(ball.vy, ball.vx);
+                float vecLen = std::min(speed*0.15f, ball.radius*4.0f);
+                float endX   = ball.x + vecLen * std::cos(angle);
+                float endY   = ball.y + vecLen * std::sin(angle);
+                al_draw_line(ball.x, ball.y, endX, endY,
+                             al_map_rgb(255, 255, 255), 2);
+            }
+            char buf[16]; sprintf(buf, "%.1f", speed);
+            al_draw_text(Engine::Resources::GetInstance()
+                            .GetFont("pirulen.ttf", 16).get(),
+                         al_map_rgb(255, 255, 0),
+                         ball.x, ball.y - ball.radius - 16,
+                         ALLEGRO_ALIGN_CENTER, buf);
         }
 
-        // ↓↓↓ 新增：計算並顯示速度
-    //float speed = std::sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-    char buffer[32];
-    sprintf(buffer, "%.1f", speed);
+        // ③ 抓縮圖到 miniMap
+        al_set_target_bitmap(miniMap);
+        al_clear_to_color(al_map_rgb(0,0,0));
+        ALLEGRO_DISPLAY* disp = al_get_current_display();
+        al_draw_scaled_bitmap(al_get_backbuffer(disp),
+                              0, 0, SCREEN_W, SCREEN_H,         // src
+                              0, 0, MINI_W, MINI_H, 0);         // dst
+        al_set_target_backbuffer(disp);   // 切回螢幕
 
-    al_draw_text(Engine::Resources::GetInstance().GetFont("pirulen.ttf", 16).get(),
-             al_map_rgb(255, 255, 0),
-             ball.x, ball.y - ball.radius - 16,
-             ALLEGRO_ALIGN_CENTER, buffer);
+        // ④ 畫 UI (Label / Button 等)
+        IScene::Draw();
+
+        // ⑤ 將小地圖貼到指定位置
+        int rightX = SCREEN_W - 200;  // 跟 Initialize 裏相同
+        int topY   = 100;
+        int miniX  = rightX + 300;    // 依需求可微調
+        int miniY  = topY   + 300;
+
+        al_draw_bitmap(miniMap, miniX, miniY, 0);
+        al_draw_rectangle(miniX, miniY,
+                          miniX + MINI_W, miniY + MINI_H,
+                          al_map_rgb(255,255,255), 2);*/
+}
+
+void manyBallScene::OnKeyDown(int keycode)
+{
+    IScene::OnKeyDown(keycode);
+
+    if (keycode == ALLEGRO_KEY_E)
+    { // 編輯模式開關
+        editMode = !editMode;
+        draggedObs = nullptr;
+        draggedBall = nullptr;
+    }
+    else if (keycode == ALLEGRO_KEY_S && editMode)
+    {
+        save_map("map.txt");
     }
 }
 
 void manyBallScene::OnMouseDown(int button, int x, int y)
 {
-
     IScene::OnMouseDown(button, x, y);
-    if (button == 1)
-    {
+    mouseX = x;
+    mouseY = y;
+
+    if (button != 1)
+        return;
+
+    if (editMode)
+    { // 編輯牆
+        draggedObs = hit_test_obstacle(x, y);
+    }
+    else
+    { // 拖球
         for (auto &ball : balls)
         {
-            float dx = x - ball.x;
-            float dy = y - ball.y;
+            float dx = x - ball.x, dy = y - ball.y;
             if (dx * dx + dy * dy <= ball.radius * ball.radius)
             {
                 draggedBall = &ball;
@@ -241,22 +384,67 @@ void manyBallScene::OnMouseDown(int button, int x, int y)
         }
     }
 }
-
 void manyBallScene::OnMouseUp(int button, int x, int y)
 {
     IScene::OnMouseUp(button, x, y);
-    if (button == 1 && draggedBall)
+    if (button != 1)
+        return;
+
+    if (draggedObs)
+        draggedObs = nullptr;
+    if (draggedBall)
     {
         draggedBall->isDragged = false;
         draggedBall = nullptr;
     }
 }
-
 void manyBallScene::OnMouseMove(int x, int y)
 {
     IScene::OnMouseMove(x, y);
+    float dx = x - mouseX, dy = y - mouseY;
     mouseX = x;
     mouseY = y;
+
+    if (editMode && draggedObs)
+    { // 拖曳牆
+        draggedObs->x += dx;
+        draggedObs->y += dy;
+    } /*
+     if (draggedBall) {              // 拖曳球（保持現有邏輯）
+         draggedBall->x = x;
+         draggedBall->y = y;
+     }*/
+}
+
+void manyBallScene::load_map(const std::string &path)
+{
+    std::ifstream fin(path);
+    if (!fin)
+        return;
+    Obstacle o;
+    while (fin >> o.x >> o.y >> o.width >> o.height)
+    {
+        o.color = random_color();
+        obstacles.push_back(o);
+    }
+}
+void manyBallScene::save_map(const std::string &path) const
+{
+    std::ofstream fout(path);
+    for (const auto &o : obstacles)
+        fout << o.x << ' ' << o.y << ' '
+             << o.width << ' ' << o.height << '\n';
+}
+
+Obstacle *manyBallScene::hit_test_obstacle(float px, float py)
+{
+    for (auto &o : obstacles)
+    {
+        if (px >= o.x && px <= o.x + o.width &&
+            py >= o.y && py <= o.y + o.height)
+            return &o;
+    }
+    return nullptr;
 }
 
 ALLEGRO_COLOR manyBallScene::random_color() const
@@ -268,20 +456,21 @@ Obstacle manyBallScene::generate_random_obstacle() const
 {
     static std::random_device rd;
     static std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> width_dist(80.0f, 160.0f);  // 寬度 80-160
-    std::uniform_real_distribution<float> height_dist(80.0f, 160.0f); // 高度 80-160
+    std::uniform_real_distribution<float> wdist(80.f, 160.f);
+    std::uniform_real_distribution<float> hdist(80.f, 160.f);
 
-    Obstacle obs;
-    obs.width = width_dist(gen);
-    obs.height = height_dist(gen);
-    std::uniform_real_distribution<float> x_dist(0.0f, SCREEN_W - obs.width);
-    std::uniform_real_distribution<float> y_dist(0.0f, SCREEN_H - obs.height);
-    obs.x = x_dist(gen);
-    obs.y = y_dist(gen);
-    obs.color = random_color();
-    return obs;
+    Obstacle o;
+    o.width = wdist(gen);
+    o.height = hdist(gen);
+    std::uniform_real_distribution<float> xdist(0.f, SCREEN_W - o.width);
+    std::uniform_real_distribution<float> ydist(0.f, SCREEN_H - o.height);
+    o.x = xdist(gen);
+    o.y = ydist(gen);
+    o.color = random_color();
+    return o;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
 void manyBallScene::limit_velocity(Ball &ball) const
 {
     float speed = std::sqrt(ball.vx * ball.vx + ball.vy * ball.vy);

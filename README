@@ -1,12 +1,26 @@
 ##Features
 -[Easy]
-    - Simple Physics simulation system(Ball fall down and bounce back with energy lost and friction)
+    - Simple Physics simulation system
+        -Ball falls down and bounces back with energy lost and friction
     - Map editor	
     - Mini map	
-    - Parameter adjustment
+    - Every simulator is interactive with mouse
+    - Parameter adjustments that can quickly see the effects 
+        - fabric's stiffness
+        - friction between the floor and ball in collision
+        - the mass, length, gravity in double pendulum
+        - the number of edges in n-polygon and ball
+    - Display the velocity vector (value and direction) of each ball in collision
+
 -[Hard]
-    - Advanced physics simulation(cloth, collision, double pendulum)
-    - 
+    - Advanced physics simulation(waterball, fabric, collision, double pendulum)
+        - Perfectly simulate the fabric's texture
+        - Simulate the effect of a ball pressing against cloth
+        - Accurately display the effect of water ball bouncing
+        - Different effects on the sides and the middle of the water ball
+        - use Position-Based Dynamics to implement the waterball
+        - In order to simulate realistically, we add damping to all stretchable objects.
+
 ##Individual Contribution
 113062228 游紫然 (33%) : Physics effect implementation, Git, Map editor
 113062229 呂翊廷 (33%) : Parameter input
